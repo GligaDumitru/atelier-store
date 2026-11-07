@@ -28,7 +28,9 @@ Auth and DB are wired together through a single chain:
 - `src/app/api/auth/[...all]/route.ts` exposes the auth instance via `toNextJsHandler(auth)`.
 - `src/lib/auth-client.ts` is the browser-side Better Auth client (uses `NEXT_PUBLIC_APP_URL` as base URL).
 
-Better Auth's tables (user, session, account, verification) are not defined yet. Generate them with `npx @better-auth/cli generate` into `src/db/schema.ts`, then `npm run db:push`. Auth will fail at runtime until that is done.
+Better Auth's tables (user, session, account, verification) are not defined yet. Generate them with `npx @better-auth/cli generate` into `src/db/schema.ts`, then `npm run db:generate` and `npm run db:migrate` (not `db:push` — see Database conventions below). Auth will fail at runtime until that is done.
+
+`src/lib/auth.ts` pins `baseURL` and `trustedOrigins` from `BETTER_AUTH_URL`, and throws at import if neither that nor `NEXT_PUBLIC_APP_URL` is set. Without a base URL, Better Auth derives the origin from request headers and builds its trusted-origin list from that, which weakens CSRF and redirect handling.
 
 The Neon HTTP driver does not support interactive transactions; switch to the `neon-serverless` (WebSocket) driver in `src/db/index.ts` if transactions are needed.
 
@@ -48,5 +50,17 @@ Follow these when extending the schema or adding queries.
 ## Environment
 
 Copy `.env.example` to `.env.local`. Required: `DATABASE_URL` (Neon pooled string), `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`. `drizzle.config.ts` loads `.env.local` first, then `.env`. `.env*` is gitignored except `.env.example`.
+
+`neon init` writes its pulled variables into `.env`, so put local overrides in `.env.local` — it wins, and the next `neon env pull` will not clobber them.
+
+### Secret handling
+
+- **Never commit a real secret.** `.env.example` carries unusable placeholders only; the committed file is public. Anyone who copies a plausible-looking placeholder into a deployment is running on a published secret.
+- **Better Auth only fails closed on its own default secret**, and only in production. A short or low-entropy value logs a warning and runs, so the value has to be genuinely random — 32 bytes, base64. `npm run build` surfacing `should be at least 32 characters` or `appears low-entropy` means the secret never loaded.
+- **Every environment gets its own secret.** Never reuse the development value in preview or production.
+- **The secret is a full-trust key, not just cookie integrity.** Sessions are random tokens checked against the `session` table, so a leaked secret cannot mint one directly — but it *does* sign the HS256 email-verification and change-email tokens that the unauthenticated `GET /api/auth/verify-email` accepts. A forged token rewrites a victim's email address, and a password reset then lands in the attacker's inbox. Treat leakage as account takeover.
+- **Never enable `session.cookieCache`** without reading how it works. It makes the cached session trusted without a database lookup, which turns the secret into a direct session-forgery key. The default `compact` and `jwt` strategies are signed but *not* encrypted, so the cookie holder can also read the session and user payload.
+- **Rotate with `BETTER_AUTH_SECRETS`**, comma-separated `<version>:<secret>` entries. The highest-priority entry signs and the rest decrypt, so rotation is non-destructive for data at rest but **still logs every session out** — signature verification only ever uses the current key. Pending verification links break too.
+- `.claude/settings.json` denies reading and editing `.env*`, including `.env.example`. Keep that rule; it means secret edits are done by hand, not by an agent.
 
 Path alias: `@/*` maps to `src/*`.
