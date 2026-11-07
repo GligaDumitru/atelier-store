@@ -1,26 +1,296 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  Design system: restrained luxury-retail. Monochrome, flat, square-cornered,
+  image-led. Tokens live in @theme; reusable primitives live in
+  @layer components at the bottom. Rules were derived from studying a luxury
+  fashion storefront's patterns (not its assets, fonts or branding).
+*/
+
+/* ---------- Tokens ---------- */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-display-serif), "Times New Roman", serif;
 }
 
-@media (prefers-color-scheme: dark) {
+@theme {
+  /* Breakpoints: layouts pivot at 768 / 1024 / 1440 */
+  --breakpoint-*: initial;
+  --breakpoint-sm: 30rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 90rem;
+
+  /* Colour: black, white and one barely-off-white image surface */
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-surface: #fbfbfb;
+  --color-muted: #6e6e6e;
+  --color-line: #e5e5e5;
+  --color-line-strong: #000000;
+  --color-scrim: rgb(0 0 0 / 0.4);
+  --color-danger: #b3261e;
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+
+  /* Type: small, tight-tracked sizes; large sizes are light-weight */
+  --text-micro: 0.5625rem;
+  --text-micro--line-height: 0.75rem;
+  --text-micro--letter-spacing: -0.03em;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-xs--letter-spacing: -0.03em;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-sm--letter-spacing: -0.02em;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-base--letter-spacing: -0.04em;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-lg--letter-spacing: -0.03em;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 2rem;
+  --text-xl--letter-spacing: -0.04em;
+  --text-2xl: 2rem;
+  --text-2xl--line-height: 2.5rem;
+  --text-2xl--letter-spacing: -0.04em;
+  --text-3xl: 3rem;
+  --text-3xl--line-height: 3.5rem;
+  --text-3xl--letter-spacing: -0.04em;
+
+  /* Spacing: 4px base (Tailwind default) plus layout constants */
+  --spacing-gutter: var(--gutter);
+  --spacing-header: 4.5rem;
+  --spacing-promo: 2.5rem;
+  --spacing-control: 3rem;
+
+  /* Flat: square corners (pill only for tiny round controls), no shadows */
+  --radius-*: initial;
+  --radius-none: 0;
+  --radius-full: 9999px;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+
+  --aspect-product: 1 / 1;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: var(--ease-standard);
+}
+
+:root {
+  color-scheme: light;
+  --gutter: 1rem;
+  --focus-ring: var(--color-ink);
+}
+
+@media (width >= 48rem) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --gutter: 2rem;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (width >= 64rem) {
+  :root {
+    --gutter: 4rem;
+  }
+}
+
+/* ---------- Base ---------- */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-paper font-sans text-base text-ink;
+  }
+
+  /* Hairline 1px borders by default; use border-ink for emphasis */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-line);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    @apply bg-ink text-paper;
+  }
+}
+
+/* ---------- Layout primitives ---------- */
+
+/* Page-width wrapper: responsive gutter, capped on ultra-wide screens.
+   Omit it for full-bleed imagery. */
+@utility container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  max-width: 120rem;
+}
+
+/* Switch the focus ring (and inherited text) to white over imagery / black */
+@utility on-dark {
+  --focus-ring: var(--color-paper);
+  color: var(--color-paper);
+}
+
+@layer components {
+  .section {
+    @apply py-12 md:py-16;
+  }
+
+  /* Full-viewport editorial block with copy and CTA pinned bottom-centre */
+  .hero {
+    @apply relative min-h-svh overflow-hidden bg-ink on-dark;
+  }
+  .hero > img,
+  .hero > video {
+    @apply absolute inset-0 size-full object-cover;
+  }
+  .hero__content {
+    @apply absolute inset-x-0 bottom-0 flex flex-col items-center gap-4 px-gutter pb-12 text-center;
+  }
+
+  /* 12-col grid, no column gap, 1px row gap: tiles sit edge to edge.
+     2 / 3 / 4 columns at <768 / 768 / 1024. */
+  .product-grid {
+    @apply grid grid-cols-12 gap-x-0 gap-y-px;
+  }
+  .product-grid > * {
+    @apply col-span-6 md:col-span-4 lg:col-span-3;
+  }
+
+  .product-tile {
+    @apply flex flex-col bg-paper;
+  }
+  .product-tile__media {
+    @apply relative aspect-product overflow-hidden bg-surface;
+  }
+  .product-tile__media > img {
+    @apply size-full object-contain;
+  }
+  .product-tile__body {
+    @apply flex flex-col gap-1 px-3 pt-3 pb-8 text-xs;
+  }
+  .product-tile__name {
+    @apply font-normal;
+  }
+  .product-tile__price {
+    @apply font-medium;
+  }
+
+  /* ---------- Typography primitives ---------- */
+
+  .eyebrow {
+    @apply text-micro font-medium;
+  }
+  /* Small bold uppercase heading / label */
+  .heading-caps {
+    @apply text-sm font-bold uppercase;
+    letter-spacing: 0.01em;
+  }
+  /* Large, thin display headline */
+  .display {
+    @apply text-2xl font-light md:text-3xl;
+  }
+
+  /* ---------- Buttons ---------- */
+
+  .btn {
+    @apply inline-flex min-h-control cursor-pointer items-center justify-center gap-2 rounded-none border border-transparent px-6 py-4 text-center text-xs font-bold uppercase transition-colors;
+    letter-spacing: 0;
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    @apply cursor-not-allowed opacity-40;
+  }
+  .btn-block {
+    @apply w-full;
+  }
+
+  /* Solid black; inverts on hover */
+  .btn-primary {
+    @apply border-ink bg-ink text-paper;
+  }
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-paper text-ink;
+  }
+
+  /* White with black hairline; inverts on hover */
+  .btn-secondary {
+    @apply border-ink bg-paper text-ink;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-ink text-paper;
+  }
+
+  /* Over imagery: solid white */
+  .btn-inverse {
+    @apply border-paper bg-paper text-ink;
+  }
+  .btn-inverse:hover:not(:disabled) {
+    @apply bg-ink text-paper;
+  }
+
+  /* Over imagery: white outline, transparent fill */
+  .btn-outline-inverse {
+    @apply border-paper bg-transparent text-paper;
+  }
+  .btn-outline-inverse:hover:not(:disabled) {
+    @apply bg-paper text-ink;
+  }
+
+  /* Small round icon button (close, pause, mute) */
+  .btn-icon {
+    @apply inline-flex size-10 cursor-pointer items-center justify-center rounded-full bg-ink/60 text-paper transition-colors hover:bg-ink;
+  }
+
+  /* ---------- Links ---------- */
+
+  /* Inline text link: always underlined */
+  .link {
+    @apply underline decoration-1 underline-offset-4 transition-colors hover:text-muted;
+  }
+  /* Navigation link: quiet grey; current page goes black, bold, caps */
+  .link-nav {
+    @apply text-muted transition-colors hover:text-ink;
+  }
+  .link-nav[aria-current="page"] {
+    @apply font-bold text-ink uppercase;
+  }
+
+  /* ---------- Borders ---------- */
+
+  .rule {
+    @apply border-t border-line;
+  }
+  .rule-strong {
+    @apply border-t border-ink;
+  }
+  /* Bordered selectable option (e.g. colour swatch): black when selected */
+  .option {
+    @apply border border-transparent;
+  }
+  .option[aria-checked="true"],
+  .option[aria-pressed="true"],
+  .option[aria-current="true"] {
+    @apply border-ink;
+  }
 }
